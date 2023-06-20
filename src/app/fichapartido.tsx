@@ -1,14 +1,15 @@
 "use client"
-import { useState, ChangeEvent, FormEvent, useEffect } from 'react';
+import { useState, ChangeEvent, FormEvent } from 'react';
 import {
   Box,
   Heading,
   FormControl,
   FormLabel,
-  Select,
   MenuItem,
   Button,
 } from '@chakra-ui/react';
+import Select from 'react-select';
+
 
 interface Jugador {
   id: number;
@@ -18,24 +19,16 @@ interface Jugador {
 
 interface FichaPartidoProps {
   jugadores: Jugador[];
+  handleFormSubmit: (PartidoFormData: FormData) => void;
 }
 
-interface PartidoFormData {
-  nombre: string;
-  fecha: string;
-  rival: string;
-  jugadores: Jugador[];
-}
-
-export default function FichaPartido(props: FichaPartidoProps) {
-  const [formData, setFormData] = useState<PartidoFormData>({
-    nombre: '',
-    fecha: '',
+export default function FichaPartido({ jugadores , handleFormSubmit}: FichaPartidoProps) {
+  const [PartidoFormData, setFormData] = useState({
+    nombreFicha: '',
+    fechaPartido: '',
     rival: '',
-    jugadores: [],
+    jugadoresSeleccionados: Array<Jugador>(18)
   });
-
-
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -45,35 +38,33 @@ export default function FichaPartido(props: FichaPartidoProps) {
     }));
   };
 
-  const handleJugadorChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const selectedJugadorId = parseInt(e.target.value);
-    const selectedJugador = formData.jugadores.find(
-      (jugador) => jugador.id === selectedJugadorId
-    );
-    const isAlreadySelected = formData.jugadores.some(
-      (jugador) => jugador.id === selectedJugadorId
-    );
+  const handleJugadorChange = (selectedOption: any, index: number) => {
+    const selectedJugadorId = selectedOption.value;
 
-    if (selectedJugador && !isAlreadySelected) {
-      setFormData((prevFormData) => ({
+    setFormData((prevFormData) => {
+      const jugadoresSeleccionados = [...prevFormData.jugadoresSeleccionados];
+      jugadoresSeleccionados[index] = selectedJugadorId.toString();
+
+      return {
         ...prevFormData,
-        jugadores: [...prevFormData.jugadores, selectedJugador],
-      }));
-    }
+        jugadoresSeleccionados,
+      };
+    });
   };
+
+  
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
 
-    // Lógica de envío de datos
-
-    setFormData({
-      nombre: '',
-      fecha: '',
-      rival: '',
-      jugadores: [],
-    });
+    // Llamar a la función handleFormSubmit del componente CargarPartido
+    handleFormSubmit(PartidoFormData);
   };
+
+  const options = jugadores.map((jugador) => ({
+    value: jugador.id,
+    label: `${jugador.nombre} - #${jugador.numero}`,
+  }));
 
   return (
     <Box maxWidth="600px" mx="auto" p={4}>
@@ -82,20 +73,20 @@ export default function FichaPartido(props: FichaPartidoProps) {
       </Heading>
       <form onSubmit={handleSubmit}>
         <FormControl mb={4}>
-          <FormLabel>Nombre del Partido</FormLabel>
+          <FormLabel>Nombre de la Ficha</FormLabel>
           <input
             type="text"
-            name="nombre"
-            value={formData.nombre}
+            name="nombreFicha"
+            value={PartidoFormData.nombreFicha}
             onChange={handleInputChange}
           />
         </FormControl>
         <FormControl mb={4}>
-          <FormLabel>Fecha</FormLabel>
+          <FormLabel>Fecha del Partido</FormLabel>
           <input
             type="date"
-            name="fecha"
-            value={formData.fecha}
+            name="fechaPartido"
+            value={PartidoFormData.fechaPartido}
             onChange={handleInputChange}
           />
         </FormControl>
@@ -104,34 +95,25 @@ export default function FichaPartido(props: FichaPartidoProps) {
           <input
             type="text"
             name="rival"
-            value={formData.rival}
+            value={PartidoFormData.rival}
             onChange={handleInputChange}
           />
         </FormControl>
         <Heading as="h3" fontSize="lg" mb={2}>
           Jugadores
         </Heading>
-        <FormControl mb={4}>
-          <FormLabel>Seleccionar Jugador</FormLabel>
-          <Select onChange={handleJugadorChange}>
-            <option value="">Seleccionar...</option>
-            {formData.jugadores.map((jugador) => (
-              <MenuItem
-                key={jugador.id}
-                value={jugador.id}
-                isDisabled={formData.jugadores.some(
-                  (selectedJugador) => selectedJugador.id === jugador.id
-                )}
-              >
-                {jugador.nombre} - #{jugador.numero}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        {formData.jugadores.map((jugador) => (
-          <Box key={jugador.id} mb={2}>
-            {jugador.nombre} - #{jugador.numero}
-          </Box>
+        {Array.from({ length: 18 }, (_, index) => (
+          <FormControl mb={4} key={index}>
+            <FormLabel>Jugador {index + 1}</FormLabel>
+            <Select
+              options={options}
+              value={options.find(
+                (option) =>
+                  option.value.toString() === PartidoFormData.jugadoresSeleccionados[index]
+              )}
+              onChange={(selectedOption) => handleJugadorChange(selectedOption, index)}
+            />
+          </FormControl>
         ))}
         <Button type="submit">Cargar</Button>
       </form>
